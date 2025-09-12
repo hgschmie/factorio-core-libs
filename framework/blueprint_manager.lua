@@ -196,7 +196,7 @@ end
 ---@param map_callback framework.blueprint.MapCallback?
 function FrameworkBlueprintManager:registerCallbackForNames(entity_names, callback, map_callback)
     assert(entity_names)
-    if type(entity_names) ~= 'table' then names = { names } end
+    if type(entity_names) ~= 'table' then entity_names = { entity_names } end
 
     for _, entity_name in pairs(entity_names) do
         self.callbacks.for_name[entity_name] = callback
