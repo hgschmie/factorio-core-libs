@@ -1,4 +1,3 @@
----@meta
 ------------------------------------------------------------------------
 -- Manage all ghost state for robot building
 ------------------------------------------------------------------------
@@ -24,14 +23,14 @@ local FrameworkGhostManager = {
 
 ---@return framework.ghost_manager.State state Manages ghost state
 function FrameworkGhostManager:state()
-    local storage = Framework.runtime:storage()
+    local state = Framework.runtime:storage()
 
     ---@type framework.ghost_manager.State
-    storage.ghost_manager = storage.ghost_manager or {
+    state.ghost_manager = state.ghost_manager or {
         ghost_entities = {},
     }
 
-    return storage.ghost_manager
+    return state.ghost_manager
 end
 
 ---@param entity LuaEntity
@@ -43,11 +42,8 @@ function FrameworkGhostManager:registerGhost(entity, player_index)
     local state = self:state()
 
     state.ghost_entities[entity.unit_number] = {
+        entity = entity,
         key = tools:createEntityKeyFromEntity(entity),
-        name = entity.ghost_name,
-        position = entity.position,
-        surface_index = entity.surface_index,
-        direction = entity.direction,
         tags = entity.tags,
         player_index = player_index,
         -- allow 10 seconds of lingering time until a refresh must have happened
@@ -55,6 +51,7 @@ function FrameworkGhostManager:registerGhost(entity, player_index)
     }
 end
 
+---@param unit_number integer
 function FrameworkGhostManager:deleteGhost(unit_number)
     local state = self:state()
     state.ghost_entities[unit_number] = nil
@@ -102,12 +99,14 @@ function FrameworkGhostManager:findGhostsInArea(area, callback)
 
     local ghosts = {}
     for idx, ghost in pairs(state.ghost_entities) do
-        local pos = Position.new(ghost.position)
-        if pos:inside(area) then
-            local key = callback(ghost)
-            if key then
-                ghosts[key] = ghost
-                state.ghost_entities[idx] = nil
+        if ghost.entity and ghost.entity.valid then
+            local pos = Position.new(ghost.entity.position)
+            if pos:inside(area) then
+                local key = callback(ghost)
+                if key then
+                    ghosts[key] = ghost
+                    state.ghost_entities[idx] = nil
+                end
             end
         end
     end
@@ -119,7 +118,7 @@ end
 -- event callbacks
 --------------------------------------------------------------------------------
 
----@param event EventData.on_built_entity | EventData.on_robot_built_entity | EventData.script_raised_revive | EventData.script_raised_built
+---@param event EventData.on_built_entity | EventData.on_robot_built_entity | EventData.on_space_platform_built_entity | EventData.script_raised_revive | EventData.script_raised_built
 local function on_ghost_entity_created(event)
     local entity = event and event.entity
     if not Is.Valid(entity) then return end
@@ -158,13 +157,17 @@ local function tick()
 
     if table_size(all_ghosts) == 0 then return end
 
-    for _, ghost_entity in pairs(all_ghosts) do
-        local callback = self.refresh_callbacks[ghost_entity.name]
-        if callback then
-            local entities = callback(ghost_entity, all_ghosts)
-            for _, entity in pairs(entities) do
-                entity.tick = game.tick + ATTACHED_GHOST_LINGER_TIME -- refresh
+    for id, ghost_entity in pairs(all_ghosts) do
+        if ghost_entity.entity and ghost_entity.entity.valid then
+            local callback = self.refresh_callbacks[ghost_entity.entity.ghost_name]
+            if callback then
+                local entities = callback(ghost_entity, all_ghosts)
+                for _, entity in pairs(entities) do
+                    entity.tick = game.tick + ATTACHED_GHOST_LINGER_TIME -- refresh
+                end
             end
+        else
+            self:deleteGhost(id)
         end
     end
 
