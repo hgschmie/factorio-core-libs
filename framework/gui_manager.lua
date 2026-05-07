@@ -363,6 +363,25 @@ function FrameworkGuiManager:destroyGuiByEntityId(entity_id)
     end
 end
 
+--- Find all GUIs that match this entity id
+---@param entity_id integer?
+---@return framework.gui[]
+function FrameworkGuiManager:findGuisByEntityId(entity_id)
+    local result = {}
+
+    if not entity_id then return result end
+
+    for _, player in pairs(game.players) do
+        for _, gui in pairs(self:findAllGuis(player.index)) do
+            if gui and gui.entity_id == entity_id then
+                table.insert(result, gui)
+            end
+        end
+    end
+
+    return result
+end
+
 ------------------------------------------------------------------------
 
 --- Destroys a GUI instance.
