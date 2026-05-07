@@ -32,7 +32,7 @@ local GUI_UPDATE_TICK_INTERVAL = 11
 ---@field player_index integer      Player Index
 ---@field type string GUI type
 ---@field parent LuaGuiElement      Parent to associate with
----@field ui_tree_provider fun(context: framework.gui): framework.gui.element_definitions
+---@field ui_tree_provider fun(context: framework.gui): framework.gui.element_definitions?
 ---@field existing_elements table<string, LuaGuiElement>? Optional set of existing GUI elements.
 ---@field context framework.gui.context? Context element
 ---@field entity_id integer? The entity for which a gui is created
@@ -323,7 +323,7 @@ function FrameworkGuiManager:createGui(map)
 
     local ui_tree = map.ui_tree_provider(gui)
     -- do not change to table_size, '#' returning 0 is the whole point of the check...
-    assert(type(ui_tree) == 'table' and #ui_tree == 0, 'The UI tree must have a single root!')
+    assert(not ui_tree or (type(ui_tree) == 'table' and #ui_tree == 0), 'The UI tree must have a single root!')
 
     if map.retain_open_guis then
         -- only close the window we just opened
@@ -333,8 +333,7 @@ function FrameworkGuiManager:createGui(map)
         self:destroyGuiByPlayer(player_index)
     end
 
-    local root = gui:addChildElements(map.parent, ui_tree, map.existing_elements)
-    gui.root = root
+    gui.root = gui:addChildElements(map.parent, ui_tree, map.existing_elements)
 
     self:addGui(player_index, gui)
 
