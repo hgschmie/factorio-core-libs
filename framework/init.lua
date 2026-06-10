@@ -118,8 +118,8 @@ function Framework:init(config)
     self.ROOT = config.root
 
     -- load only once per stage
-    self.settings = self.settings or require('framework.settings') --[[ @as FrameworkSettings ]]
-    self.logger = self.logger or require('framework.logger') --[[ @as FrameworkLogger ]]
+    self.settings = self.settings or require('framework.settings') --[[@as FrameworkSettings ]]
+    self.logger = self.logger or require('framework.logger') --[[@as FrameworkLogger ]]
     self.other_mods = self.other_mods or require('framework.other-mods')
 
     if data and data.raw['gui-style'] then

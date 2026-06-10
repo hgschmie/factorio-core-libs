@@ -72,6 +72,7 @@ local event_handler_template = {
 
 -- predefine arrays for all supported events
 for name, id in pairs(defines.events) do
+    ---@diagnostic disable-next-line: undefined-field
     if name:starts_with('on_gui_') then
         event_handler_template[id] = {}
     end
