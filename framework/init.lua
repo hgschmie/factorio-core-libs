@@ -132,6 +132,9 @@ function Framework:init(config)
         self:init_runtime(config --[[@as FrameworkConfig]])
     end
 
+    -- flush possible settings pulled in by framework init code
+    self.settings:flush()
+
     return self
 end
 
