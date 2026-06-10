@@ -242,7 +242,7 @@ function FrameworkGui:addChildElements(parent, children, existing_elements)
             gui_element = self:createChildElement(parent, child)
         elseif child.tab and child.content then
             gui_element = self:addTab(parent, child)
-        else
+        elseif table_size(child) > 0 then
             error('Invalid element: ' .. serpent.line(child))
         end
         root = root or gui_element
