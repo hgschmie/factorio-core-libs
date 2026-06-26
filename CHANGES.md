@@ -1,3 +1,12 @@
+## Version 3
+
+* Rewrote Tombstone Manager - from Miniloader
+
+  Reset tombstone manager with `Framework.TombstoneManager:state(true)` in a migration.
+
+Use Framework.Tombstone, not Framework.tombstone
+
+
 ## Version 2
 
 * Add code for ticker jobs
