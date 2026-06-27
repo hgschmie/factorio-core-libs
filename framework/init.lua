@@ -27,7 +27,7 @@ local Is = require('stdlib.utils.is')
 ---@field Tombstone ff2.TombstoneManager?
 ---@field translation_manager framework.translation.Manager?
 ---@field other_mods framework.OtherModsManager
----@field RemoteApis ff2.RemoteApisManager
+---@field RemoteApis ff2.RemoteApisManager?
 ---@field ExportedApis table<string, function>?
 ---@field render FrameworkRender?
 local FrameworkInit = {
@@ -62,6 +62,8 @@ local FrameworkInit = {
     Tombstone = nil,
 
     ExportedApis = nil,
+
+    RemoteApis = nil,
 
     render = nil,
 }
@@ -149,7 +151,7 @@ for _, game_stage in pairs(game_stages) do
     prototype['post_' .. game_stage .. '_stage'] = function()
         -- otherwise, it is an stage method, pass it to the submodules
         FrameworkInit.other_mods[game_stage]() -- other-mods subsystem
-        FrameworkInit.remote_apis[game_stage]() -- remote-apis subsystem
+        FrameworkInit.RemoteApis[game_stage]() -- remote-apis subsystem
     end
 end
 
