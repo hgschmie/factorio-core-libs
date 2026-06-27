@@ -62,7 +62,7 @@ function FrameworkTombstoneManager:state(force)
     local state = Framework.runtime:storage()
 
     ---@type ff2.tombstone.State
-    state.tombstone_manager = (state.tombstone_manager and not force) or {
+    state.tombstone_manager = (state.tombstone_manager and not force) and state.tombstone_manager or {
         tombstones = {},
         tombstone_count = 0,
     }
