@@ -1,14 +1,18 @@
 ## Version 3
 
+* Rewrote Ghost Manager - From Fiber Optics
+
+  - Per type ghost callback
+  - Framework.Ghost (not Framework.ghost_manager)
+
 * Rewrote Tombstone Manager - from Miniloader
 
-  Reset tombstone manager with `Framework.TombstoneManager:state(true)` in a migration.
-
-Use Framework.Tombstone, not Framework.tombstone
+  - migrate with migrations/migrations/migrate_tombstone_manager.lua
+  - Use Framework.Tombstone, not Framework.tombstone
 
 * Move ticker state into framework storage
 
-migrate with
+migrate with migrations/migrate_ticker.lua
 
 ``` lua
 local Ticker = require('framework.ticker')
