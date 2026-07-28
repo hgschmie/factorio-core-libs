@@ -1,3 +1,9 @@
+## Version 4
+
+* Gui - From Train Tracker
+
+addTag method to GUI for non-gui element links
+
 ## Version 3
 
 * Rewrote Ghost Manager - From Fiber Optics
