@@ -4,6 +4,14 @@
 
 addTag method to GUI for non-gui element links
 
+* Logger - From LTN-Space Exploration
+
+new logger, supports levels, config is now a dropdown
+
+* Settings - From LTN-Space Exploration
+
+better settings management for debug level
+
 ## Version 3
 
 * Rewrote Ghost Manager - From Fiber Optics
