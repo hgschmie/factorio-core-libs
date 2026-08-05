@@ -109,7 +109,7 @@ function FrameworkSettings:get_settings(setting_type, player_index)
     values = settings_group:init_values(player_index)
 
     for key, setting_def in pairs(settings_group.definitions) do
-        local setting = settings_group.load_value(setting_def.key, player_index)
+        local setting = settings and settings_group.load_value(setting_def.key, player_index) or nil
         if setting and (setting.value ~= nil) then
             values[key] = setting.value
         else
@@ -117,7 +117,6 @@ function FrameworkSettings:get_settings(setting_type, player_index)
         end
     end
 
-    Framework.logger:debugf("Loaded '%s' settings: %s", setting_type, serpent.line(settings_group:get_values()))
     return values
 end
 
