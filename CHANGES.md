@@ -1,5 +1,9 @@
 ## Version 4
 
+* Ghost Manager - From Fiber Optics
+
+Fix that ghost manager deletes unrelated ghosts too fast
+
 * Gui - From Train Tracker
 
 addTag method to GUI for non-gui element links
