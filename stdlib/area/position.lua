@@ -5,10 +5,13 @@
 -- @see Position
 -- @see defines.direction
 ---@class PositionLibrary
+---@overload fun(pos: MapPosition|Vector|string): MapPosition.struct
+---@overload fun(x: number, y?: number): MapPosition.struct
 local Position = { __class = 'Position', __index = require('stdlib.core') }
-setmetatable(Position, Position)
+setmetatable(Position --[[@as table]], Position --[[@as table]])
 
-package.loaded['__' .. script.mod_name .. '__/' .. (...):gsub('%.', '/') .. '.lua'] = Position
+local module_name = tostring(...)
+package.loaded['__' .. script.mod_name .. '__/' .. module_name:gsub('%.', '/') .. '.lua'] = Position
 
 local Area = require('stdlib.area.area')
 local Direction = require('stdlib.area.direction')
@@ -24,6 +27,7 @@ local split = string.split
 local directions = defines.direction
 
 local EPSILON = 1.19e-07
+---@type MapPosition.struct
 local ORIGIN = { x = 0, y = 0 }
 
 local metatable
@@ -46,36 +50,42 @@ Position.__call = function(_, ...)
     end
 end
 
+---@param x number|double|int32
+---@param y number|double|int32
+---@return MapPosition.struct position
 local function new(x, y)
-    return setmetatable({ x = x, y = y }, metatable)
+    return setmetatable({ x = x, y = y }, metatable) --[[@as MapPosition.struct]]
 end
 
 --- Returns a correctly formated position object.
 -- @usage Position.new({0, 0}) -- returns {x = 0, y = 0}
 ---@param pos MapPosition the position table or array to convert
----@return MapPosition
+---@return MapPosition.struct position
 function Position.new(pos)
     return new(pos.x or pos[1] or 0, pos.y or pos[2] or 0)
 end
 
 --- Creates a table representing the position from x and y.
 ---@param ... number x and y coordinates
----@return MapPosition
+---@return MapPosition.struct position
 function Position.construct(...)
     -- was self was passed as first argument?
     local args = type((...)) == 'table' and { select(2, ...) } or { select(1, ...) }
     return new(args[1] or 0, args[2] or args[1] or 0)
 end
 
+---@param x number|double|int32
+---@param y number|double|int32
+---@return MapPosition.struct position
 function Position.construct_xy(x, y)
     return new(x, y)
 end
 
 --- Update a position in place without returning a new position.
----@param pos MapPosition
+---@param pos MapPosition.struct
 ---@param x number
 ---@param y number
----@return MapPosition position the passed position updated.
+---@return MapPosition.struct position the passed position updated.
 function Position.update(pos, x, y)
     pos.x, pos.y = x, y
     return pos
@@ -83,38 +93,40 @@ end
 
 --- Load the metatable into the passed position without creating a new one.
 -- Always assumes a valid position is passed
----@param pos MapPosition the position to set the metatable onto
----@return MapPosition position the position with metatable attached
+---@param pos MapPosition.struct the position to set the metatable onto
+---@return MapPosition.struct position the position with metatable attached
 function Position.load(pos)
-    return setmetatable(pos, metatable)
+    return setmetatable(pos, metatable) --[[@as MapPosition.struct]]
 end
 
 --- Converts a position string to a position.
 ---@param pos_string string the position to convert
----@return MapPosition
+---@return MapPosition.struct position
 function Position.from_string(pos_string)
-    return Position(load('return ' .. pos_string)())
+    local chunk, error_message = load('return ' .. pos_string)
+    assert(chunk, error_message)
+    return Position.new(chunk())
 end
 
 --- Converts a string key position to a position.
 ---@param pos_string string the position to convert
----@return MapPosition
+---@return MapPosition.struct position
 function Position.from_key(pos_string)
     local tab = split(pos_string, ',', false, tonumber)
-    return new(tab[1], tab[2])
+    return new(assert(tab[1]), assert(tab[2]))
 end
 
 --- Gets the left top tile position of a chunk from the chunk position.
----@param pos MapPosition
----@return MapPosition
+---@param pos ChunkPosition.struct
+---@return MapPosition.struct position
 function Position.from_chunk_position(pos)
     local x, y = (floor(pos.x) * 32), (floor(pos.y) * 32)
     return new(x, y)
 end
 
 --- Convert position from pixels
----@param pos MapPosition
----@return MapPosition position
+---@param pos MapPosition.struct
+---@return MapPosition.struct position
 function Position.from_pixels(pos)
     local x = pos.x / 32
     local y = pos.y / 32
@@ -126,60 +138,61 @@ end
 
 --- Addition of two positions.
 ---@param pos1 MapPosition
----@param ... MapPosition|number position or x, y values.
----@return MapPosition position pos1 with pos2 added
+---@param ... MapPosition|Vector|number position or x, y values.
+---@return MapPosition.struct position pos1 with pos2 added
 function Position.add(pos1, ...)
-    pos1 = Position(pos1)
-    local pos2 = Position(...)
+    pos1 = Position.__call(Position, pos1)
+    local pos2 = Position.__call(Position, ...)
     return new(pos1.x + pos2.x, pos1.y + pos2.y)
 end
 
 --- Subtraction of two positions..
 ---@param pos1 MapPosition
----@param ... MapPosition|number position or x, y values
----@return MapPosition position pos1 with pos2 subtracted
+---@param ... MapPosition|Vector|number position or x, y values
+---@return MapPosition.struct position pos1 with pos2 subtracted
 function Position.subtract(pos1, ...)
-    pos1 = Position(pos1)
-    local pos2 = Position(...)
+    pos1 = Position.__call(Position, pos1)
+    local pos2 = Position.__call(Position, ...)
     return new(pos1.x - pos2.x, pos1.y - pos2.y)
 end
 
 --- Multiplication of two positions.
 ---@param pos1 MapPosition
 ---@param ... MapPosition|number position or x, y values
----@return MapPosition position pos1 multiplied by pos2
+---@return MapPosition.struct position pos1 multiplied by pos2
 function Position.multiply(pos1, ...)
-    pos1 = Position(pos1)
-    local pos2 = Position(...)
+    pos1 = Position.__call(Position, pos1)
+    local pos2 = Position.__call(Position, ...)
     return new(pos1.x * pos2.x, pos1.y * pos2.y)
 end
 
 --- Division of two positions.
 ---@param pos1 MapPosition
 ---@param ... MapPosition|number position or x, y values
----@return MapPosition position pos1 divided by pos2
+---@return MapPosition.struct position pos1 divided by pos2
 function Position.divide(pos1, ...)
-    pos1 = Position(pos1)
-    local pos2 = Position(...)
+    pos1 = Position.__call(Position, pos1)
+    local pos2 = Position.__call(Position, ...)
     return new(pos1.x / pos2.x, pos1.y / pos2.y)
 end
 
 --- Modulo of two positions.
 ---@param pos1 MapPosition
 ---@param ... MapPosition|number position or x, y values
----@return MapPosition position pos1 modulo pos2
+---@return MapPosition.struct position pos1 modulo pos2
 function Position.mod(pos1, ...)
-    pos1 = Position(pos1)
-    local pos2 = Position(...)
+    pos1 = Position.__call(Position, pos1)
+    local pos2 = Position.__call(Position, ...)
     return new(pos1.x % pos2.x, pos1.y % pos2.y)
 end
 
 --- Return the closest position to the first position.
----@param pos1 MapPosition The position to find the closest too
----@param positions MapPosition[] array of MapPosition
----@return MapPosition
+---@param pos1 MapPosition.struct The position to find the closest to
+---@param positions MapPosition.struct[] array of keyed MapPositions
+---@return MapPosition.struct position
 function Position.closest(pos1, positions)
     local x, y = pos1.x, pos1.y
+    ---@type number
     local closest = math.MAXINT32
     for _, pos in pairs(positions) do
         local distance = Position.distance(pos1, pos)
@@ -192,11 +205,12 @@ function Position.closest(pos1, positions)
 end
 
 --- Return the farthest position from the first position.
----@param pos1 MapPosition The position to find the farthest from
----@param positions MapPosition[] array of MapPosition
----@return MapPosition
+---@param pos1 MapPosition.struct The position to find the farthest from
+---@param positions MapPosition.struct[] array of keyed MapPositions
+---@return MapPosition.struct position
 function Position.farthest(pos1, positions)
     local x, y = pos1.x, pos1.y
+    ---@type number
     local closest = 0
     for _, pos in pairs(positions) do
         local distance = Position.distance(pos1, pos)
@@ -209,26 +223,26 @@ function Position.farthest(pos1, positions)
 end
 
 --- The middle of two positions.
----@param pos1 MapPosition
----@param pos2 MapPosition
----@return MapPosition position the middle of two positions
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
+---@return MapPosition.struct position the middle of two positions
 function Position.between(pos1, pos2)
     return new((pos1.x + pos2.x) / 2, (pos1.y + pos2.y) / 2)
 end
 
 --- The projection point of two positions.
----@param pos1 MapPosition
----@param pos2 MapPosition
----@return MapPosition position the projected position
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
+---@return MapPosition.struct position the projected position
 function Position.projection(pos1, pos2)
     local s = (pos1.x * pos2.x + pos1.y * pos2.y) / (pos2.x * pos2.x + pos2.y * pos2.y)
     return new(s * pos2.x, s * pos2.y)
 end
 
 --- The reflection point or two positions.
----@param pos1 MapPosition
----@param pos2 MapPosition
----@return MapPosition position the reflected position
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
+---@return MapPosition.struct position the reflected position
 function Position.reflection(pos1, pos2)
     local s = 2 * (pos1.x * pos2.x + pos1.y * pos2.y) / (pos2.x * pos2.x + pos2.y * pos2.y)
     return new(s * pos2.x - pos1.x, s * pos2.y - pos1.y)
@@ -236,47 +250,51 @@ end
 
 --- Stores the position for recall later, not deterministic.
 -- Only the last position stored is saved.
----@param pos MapPosition
+---@param pos MapPosition.struct
+---@return MapPosition.struct position the stored position
 function Position.store(pos)
     rawset(getmetatable(pos), '_saved', pos)
     return pos
 end
 
 --- Recalls the stored position.
----@param pos MapPosition
----@return MapPosition position the stored position
+---@param pos MapPosition.struct
+---@return MapPosition.struct? position the stored position, if any
 function Position.recall(pos)
     return rawget(getmetatable(pos), '_saved')
 end
 
 --- Normalizes a position by rounding it to 2 decimal places.
----@param pos MapPosition
----@return MapPosition position a new normalized position
+---@param pos MapPosition.struct
+---@return MapPosition.struct position a new normalized position
 function Position.normalize(pos)
     return new(round_to(pos.x, 2), round_to(pos.y, 2))
 end
 
 --- Abs x, y values
----@param pos MapPosition
----@return MapPosition
+---@param pos MapPosition.struct
+---@return MapPosition.struct position
 function Position.abs(pos)
     return new(abs(pos.x), abs(pos.y))
 end
 
 --- Ceil x, y values.
----@param pos MapPosition
----@return MapPosition
+---@param pos MapPosition.struct
+---@return MapPosition.struct position
 function Position.ceil(pos)
     return new(ceil(pos.x), ceil(pos.y))
 end
 
 --- Floor x, y values.
----@param pos MapPosition
----@return MapPosition
+---@param pos MapPosition.struct
+---@return MapPosition.struct position
 function Position.floor(pos)
     return new(floor(pos.x), floor(pos.y))
 end
 
+---@param pos MapPosition.struct
+---@return number x
+---@return number y
 local function pos_center(pos)
     local x, y
     local ceil_x = ceil(pos.x)
@@ -287,60 +305,60 @@ local function pos_center(pos)
 end
 
 --- The center position of the tile where the given position resides.
----@param pos MapPosition
----@return MapPosition position a new position at the center of the tile
+---@param pos MapPosition.struct
+---@return MapPosition.struct position a new position at the center of the tile
 function Position.center(pos)
     return new(pos_center(pos))
 end
 
 --- Rounds a positions points to the closest integer.
----@param pos MapPosition
----@return MapPosition position a new rounded position
+---@param pos MapPosition.struct
+---@return MapPosition.struct position a new rounded position
 function Position.round(pos)
     return new(round(pos.x), round(pos.y))
 end
 
 --- Perpendicular position.
----@param pos MapPosition
----@return MapPosition position
+---@param pos MapPosition.struct
+---@return MapPosition.struct position
 function Position.perpendicular(pos)
     return new(-pos.y, pos.x)
 end
 
 --- Swap the x and y coordinates.
----@param pos MapPosition
----@return MapPosition position a new position with x and y swapped
+---@param pos MapPosition.struct
+---@return MapPosition.struct position a new position with x and y swapped
 function Position.swap(pos)
     return new(pos.y, pos.x)
 end
 
 --- Flip the signs of the position.
----@param pos MapPosition
----@return MapPosition position a new position with flipped signs
+---@param pos MapPosition.struct
+---@return MapPosition.struct position a new position with flipped signs
 function Position.flip(pos)
     return new(-pos.x, -pos.y)
 end
 Position.unary = Position.flip
 
 --- Flip the x sign.
----@param pos MapPosition
----@return MapPosition position a new position with the sign of x flipped
+---@param pos MapPosition.struct
+---@return MapPosition.struct position a new position with the sign of x flipped
 function Position.flip_x(pos)
     return new(-pos.x, pos.y)
 end
 
 --- Flip the y sign.
----@param pos MapPosition
----@return MapPosition position a new position with the sign of y flipped
+---@param pos MapPosition.struct
+---@return MapPosition.struct position a new position with the sign of y flipped
 function Position.flip_y(pos)
     return new(pos.x, -pos.y)
 end
 
 --- Lerp position of pos1 and pos2.
----@param pos1 MapPosition
----@param pos2 MapPosition
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
 ---@param alpha number 0-1 how close to get to position 2
----@return MapPosition position the interpolated position
+---@return MapPosition.struct position the interpolated position
 function Position.lerp(pos1, pos2, alpha)
     local x = pos1.x + (pos2.x - pos1.x) * alpha
     local y = pos1.y + (pos2.y - pos1.y) * alpha
@@ -348,8 +366,9 @@ function Position.lerp(pos1, pos2, alpha)
 end
 
 ---  Trim the position to a length.
----@param pos MapPosition
+---@param pos MapPosition.struct
 ---@param max_len number
+---@return MapPosition.struct position
 function Position.trim(pos, max_len)
     local s = max_len * max_len / (pos.x * pos.x + pos.y * pos.y)
     s = (s > 1 and 1) or sqrt(s)
@@ -357,10 +376,10 @@ function Position.trim(pos, max_len)
 end
 
 --- Returns the position along line between source and target, at the distance from target.
----@param pos1 MapPosition where the line starts and extends from.
----@param pos2 MapPosition where the line ends and is offset back from.
+---@param pos1 MapPosition.struct where the line starts and extends from.
+---@param pos2 MapPosition.struct where the line ends and is offset back from.
 ---@param distance_from_pos2 number backwards from pos1 for the new position.
----@return MapPosition position a point along the line between source and target, offset back from the target
+---@return MapPosition.struct position a point along the line between source and target, offset back from the target
 function Position.offset_along_line(pos1, pos2, distance_from_pos2)
     distance_from_pos2 = distance_from_pos2 or 0
 
@@ -375,10 +394,10 @@ function Position.offset_along_line(pos1, pos2, distance_from_pos2)
 end
 
 --- Translates a position in the given direction.
----@param pos MapPosition the position to translate
+---@param pos MapPosition.struct the position to translate
 ---@param direction defines.direction the direction of translation
 ---@param distance number distance of the translation
----@return MapPosition position a new translated position
+---@return MapPosition.struct position a new translated position
 function Position.translate(pos, direction, distance)
     direction = direction or 0
     distance = distance or 1
@@ -386,11 +405,11 @@ function Position.translate(pos, direction, distance)
 end
 
 --- Return a random offset of a position.
----@param pos MapPosition the position to randomize
+---@param pos MapPosition.struct the position to randomize
 ---@param minimum? number the minimum amount to offset
 ---@param maximum? number the maximum amount to offset
 ---@param random_tile? boolean randomize the location on the tile
----@return MapPosition position a new randomly offset position
+---@return MapPosition.struct position a new randomly offset position
 function Position.random(pos, minimum, maximum, random_tile)
     local rand_x = random(minimum or 0, maximum or 1)
     local rand_y = random(minimum or 0, maximum or 1)
@@ -399,6 +418,8 @@ function Position.random(pos, minimum, maximum, random_tile)
     return new(x, y)
 end
 
+---@param ... MapPosition.struct|MapPosition.struct[]
+---@return MapPosition.struct[] positions
 local function get_array(...)
     local array = select(2, ...)
     if array then
@@ -406,12 +427,13 @@ local function get_array(...)
     else
         array = (...)
     end
+    ---@cast array MapPosition.struct[]
     return array
 end
 
 --- Return the average position of the passed positions.
----@param ... MapPosition|MapPosition[] positions to average
----@return MapPosition position a new position
+---@param ... MapPosition.struct|MapPosition.struct[] positions to average
+---@return MapPosition.struct position a new position
 function Position.average(...)
     local positions = get_array(...)
     local avg = new(0, 0)
@@ -420,11 +442,13 @@ function Position.average(...)
 end
 
 --- Return the minimum position of the passed positions.
----@param ... MapPosition|MapPosition[] positions to compare
----@return MapPosition position a new position
+---@param ... MapPosition.struct|MapPosition.struct[] positions to compare
+---@return MapPosition.struct position a new position
 function Position.min(...)
     local positions = get_array(...)
-    local x, y
+    local first = assert(positions[1], 'at least one position is required')
+    local x, y = first.x, first.y
+    ---@type number
     local len = math.MAXINT32
     for _, pos in pairs(positions) do
         local cur_len = Position.len(pos)
@@ -437,11 +461,13 @@ function Position.min(...)
 end
 
 --- Return the maximum position of the passed positions.
----@param ... MapPosition|MapPosition[] positions to compare
----@return MapPosition position a new position
+---@param ... MapPosition.struct|MapPosition.struct[] positions to compare
+---@return MapPosition.struct position a new position
 function Position.max(...)
     local positions = get_array(...)
-    local x, y
+    local first = assert(positions[1], 'at least one position is required')
+    local x, y = first.x, first.y
+    ---@type number
     local len = -math.MAXINT32
     for _, pos in pairs(positions) do
         local cur_len = Position.len(pos)
@@ -454,11 +480,12 @@ function Position.max(...)
 end
 
 --- Return a position created from the smallest x, y values in the passed positions.
----@param ... MapPosition|MapPosition[] positions to compare
----@return MapPosition position a new position
+---@param ... MapPosition.struct|MapPosition.struct[] positions to compare
+---@return MapPosition.struct position a new position
 function Position.min_xy(...)
     local positions = get_array(...)
-    local x, y = positions[1].x, positions[1].y
+    local first = assert(positions[1], 'at least one position is required')
+    local x, y = first.x, first.y
     for _, pos in pairs(positions) do
         x = min(x, pos.x)
         y = min(y, pos.y)
@@ -467,11 +494,12 @@ function Position.min_xy(...)
 end
 
 --- Return a position created from the largest x, y values in the passed positions.
----@param ... MapPosition|MapPosition[] positions to compare
----@return MapPosition position a new position
+---@param ... MapPosition.struct|MapPosition.struct[] positions to compare
+---@return MapPosition.struct position a new position
 function Position.max_xy(...)
     local positions = get_array(...)
-    local x, y = positions[1].x, positions[1].y
+    local first = assert(positions[1], 'at least one position is required')
+    local x, y = first.x, first.y
     for _, pos in pairs(positions) do
         x = max(x, pos.x)
         y = max(y, pos.y)
@@ -480,7 +508,11 @@ function Position.max_xy(...)
 end
 
 --- The intersection of 4 positions.
----@return MapPosition position a new position
+---@param pos1_start MapPosition.struct
+---@param pos1_end MapPosition.struct
+---@param pos2_start MapPosition.struct
+---@param pos2_end MapPosition.struct
+---@return MapPosition.struct position a new position
 function Position.intersection(pos1_start, pos1_end, pos2_start, pos2_end)
     local d = (pos1_start.x - pos1_end.x) * (pos2_start.y - pos2_end.y) - (pos1_start.y - pos1_end.y) *
         (pos2_start.x - pos2_end.x)
@@ -495,64 +527,64 @@ end
 -- @section Mutate Methods
 
 --- Normalizes a position by rounding it to 2 decimal places.
----@param pos MapPosition
----@return MapPosition position the normalized position, mutated in place
+---@param pos MapPosition.struct
+---@return MapPosition.struct position the normalized position, mutated in place
 function Position.normalized(pos)
     pos.x, pos.y = round_to(pos.x, 2), round_to(pos.y, 2)
     return pos
 end
 
 --- Abs x, y values
----@param pos MapPosition
----@return MapPosition position the absolute position, mutated in place
+---@param pos MapPosition.struct
+---@return MapPosition.struct position the absolute position, mutated in place
 function Position.absed(pos)
     pos.x, pos.y = abs(pos.x), abs(pos.y)
     return pos
 end
 
 --- Ceil x, y values in place.
----@param pos MapPosition
----@return MapPosition position the ceiled position, mutated in place
+---@param pos MapPosition.struct
+---@return MapPosition.struct position the ceiled position, mutated in place
 function Position.ceiled(pos)
     pos.x, pos.y = ceil(pos.x), ceil(pos.y)
     return pos
 end
 
 --- Floor x, y values.
----@param pos MapPosition
----@return MapPosition position the floored position, mutated in place
+---@param pos MapPosition.struct
+---@return MapPosition.struct position the floored position, mutated in place
 function Position.floored(pos)
     pos.x, pos.y = floor(pos.x), floor(pos.y)
     return pos
 end
 
 --- The center position of the tile where the given position resides.
----@param pos MapPosition
----@return MapPosition position the centered position, mutated in place
+---@param pos MapPosition.struct
+---@return MapPosition.struct position the centered position, mutated in place
 function Position.centered(pos)
     pos.x, pos.y = pos_center(pos)
     return pos
 end
 
 --- Rounds a positions points to the closest integer.
----@param pos MapPosition
----@return MapPosition position the rounded position, mutated in place
+---@param pos MapPosition.struct
+---@return MapPosition.struct position the rounded position, mutated in place
 function Position.rounded(pos)
     pos.x, pos.y = round(pos.x), round(pos.y)
     return pos
 end
 
 --- Swap the x and y coordinates.
----@param pos MapPosition
----@return MapPosition position the swapped position, mutated in place
+---@param pos MapPosition.struct
+---@return MapPosition.struct position the swapped position, mutated in place
 function Position.swapped(pos)
     pos.x, pos.y = pos.y, pos.x
     return pos
 end
 
 --- Flip the signs of the position.
----@param pos MapPosition
----@return MapPosition position the flipped position, mutated in place
+---@param pos MapPosition.struct
+---@return MapPosition.struct position the flipped position, mutated in place
 function Position.flipped(pos)
     pos.x, pos.y = -pos.x, -pos.y
     return pos
@@ -563,8 +595,8 @@ end
 -- Test Comment
 
 --- Convert to pixels from position
----@param pos MapPosition
----@return MapPosition position
+---@param pos MapPosition.struct
+---@return MapPosition.struct position
 function Position.to_pixels(pos)
     local x = pos.x * 32
     local y = pos.y * 32
@@ -572,21 +604,21 @@ function Position.to_pixels(pos)
 end
 
 --- Gets the chunk position of a chunk where the specified position resides.
----@param pos MapPosition a position residing somewhere in a chunk
----@return ChunkPosition chunk_position a new chunk position
+---@param pos MapPosition.struct a position residing somewhere in a chunk
+---@return ChunkPosition.struct chunk_position a new chunk position
 -- @usage local chunk_x = Position.chunk_position(pos).x
 function Position.to_chunk_position(pos)
     local x, y = floor(pos.x / 32), floor(pos.y / 32)
-    return new(x, y)
+    return new(x, y) --[[@as ChunkPosition.struct]]
 end
 
 --- Area Conversion Methods
 -- @section Area Conversion Methods
 
 --- Expands a position to a square area.
----@param pos MapPosition the position to expand into an area
+---@param pos MapPosition.struct the position to expand into an area
 ---@param radius number half of the side length of the area
----@return BoundingBox area the area
+---@return Area.Area area the area
 function Position.expand_to_area(pos, radius)
     radius = radius or 1
 
@@ -597,10 +629,10 @@ function Position.expand_to_area(pos, radius)
 end
 
 --- Expands a position into an area by setting pos to left_top.
----@param pos MapPosition
+---@param pos MapPosition.struct
 ---@param width number
 ---@param height number
----@return BoundingBox
+---@return Area.Area area
 function Position.to_area(pos, width, height)
     width = width or 0
     height = height or width
@@ -612,8 +644,8 @@ function Position.to_area(pos, width, height)
 end
 
 --- Converts a tile position to the @{BoundingBox|area} of the tile it is in.
----@param pos TilePosition the tile position
----@return BoundingBox area the area of the tile
+---@param pos TilePosition.struct the tile position
+---@return Area.Area area the area of the tile
 function Position.to_tile_area(pos)
     local x, y = floor(pos.x), floor(pos.y)
     local left_top = { x = x, y = y }
@@ -623,8 +655,8 @@ function Position.to_tile_area(pos)
 end
 
 --- Get the chunk area the specified position is in.
----@param pos MapPosition
----@return BoundingBox
+---@param pos MapPosition.struct
+---@return Area.Area area
 function Position.to_chunk_area(pos)
     local left_top = { x = floor(pos.x / 32) * 32, y = floor(pos.y / 32) * 32 }
     local right_bottom = { x = left_top.x + 32, y = left_top.y + 32 }
@@ -633,8 +665,8 @@ function Position.to_chunk_area(pos)
 end
 
 --- Get the chunk area for the specified chunk position.
----@param pos ChunkPosition
----@return BoundingBox area the chunk position's area
+---@param pos ChunkPosition.struct
+---@return Area.Area area the chunk position's area
 function Position.chunk_position_to_chunk_area(pos)
     local left_top = { x = pos.x * 32, y = pos.y * 32 }
     local right_bottom = { left_top.x + 32, left_top.y + 32 }
@@ -645,65 +677,65 @@ end
 -- @section Functions
 
 --- Gets the squared length of a position
----@param pos MapPosition
+---@param pos MapPosition.struct
 ---@return number
 function Position.len_squared(pos)
     return pos.x * pos.x + pos.y * pos.y
 end
 
 --- Gets the length of a position
----@param pos MapPosition
+---@param pos MapPosition.struct
 ---@return number
 function Position.len(pos)
     return (pos.x * pos.x + pos.y * pos.y) ^ 0.5
 end
 
 --- Converts a position to a string.
----@param pos MapPosition the position to convert
+---@param pos MapPosition.struct the position to convert
 ---@return string position_string string representation of the position
 function Position.to_string(pos)
     return '{x = ' .. pos.x .. ', y = ' .. pos.y .. '}'
 end
 
 --- Converts a position to an x, y string.
----@param pos MapPosition the position to convert
+---@param pos MapPosition.struct the position to convert
 ---@return string
 function Position.to_string_xy(pos)
     return pos.x .. ', ' .. pos.y
 end
 
 --- Converts a position to a string suitable for using as a table index.
----@param pos MapPosition the position to convert
+---@param pos MapPosition.struct the position to convert
 ---@return string
 function Position.to_key(pos)
     return pos.x .. ',' .. pos.y
 end
 
 --- Unpack a position into a tuple.
----@param pos MapPosition the position to unpack
----@return number x
----@return number y
+---@param pos MapPosition.struct the position to unpack
+---@return double x
+---@return double y
 function Position.unpack(pos)
     return pos.x, pos.y
 end
 
 --- Packs a position into an array.
----@param pos MapPosition the position to pack
----@return number[]
+---@param pos MapPosition.struct the position to pack
+---@return double[] coordinates
 function Position.pack(pos)
     return { pos.x, pos.y }
 end
 
 --- Is this position {0, 0}.
----@param pos MapPosition
+---@param pos MapPosition.struct
 ---@return boolean
 function Position.is_zero(pos)
     return pos.x == 0 and pos.y == 0
 end
 
 --- Is a position inside of an area.
----@param pos MapPosition The pos to check
----@param area BoundingBox The area to check.
+---@param pos MapPosition.struct The pos to check
+---@param area Area.Area The area to check.
 ---@return boolean inside true if the position is inside the area
 function Position.inside(pos, area)
     local lt = area.left_top
@@ -713,44 +745,44 @@ function Position.inside(pos, area)
 end
 
 --- Is this a simple position. {num, num}
----@param pos MapPosition
+---@param pos any
 ---@return boolean
 function Position.is_simple_position(pos)
     return type(pos) == 'table' and type(pos[1]) == 'number' and type(pos[2]) == 'number'
 end
 
 --- Is this a complex position. {x = number, y = number}
----@param pos MapPosition
+---@param pos any
 ---@return boolean
 function Position.is_complex_position(pos)
     return type(pos) == 'table' and type(pos.x) == 'number' and type(pos.y) == 'number'
 end
 
 --- Does the position have the class attached
----@param pos MapPosition
+---@param pos any
 ---@return boolean
 function Position.is_Position(pos)
     return getmetatable(pos) == metatable
 end
 
 --- Is this any position
----@param pos MapPosition
+---@param pos any
 ---@return boolean
 function Position.is_position(pos)
     return Position.is_Position(pos) or Position.is_complex_position(pos) or Position.is_simple_position(pos)
 end
 
 --- Return the atan2 of 2 positions.
----@param pos1 MapPosition
----@param pos2 MapPosition
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
 ---@return number
 function Position.atan2(pos1, pos2)
     return atan2(pos2.x - pos1.x, pos2.y - pos1.y)
 end
 
 --- The angle between two positions
----@param pos1 MapPosition
----@param pos2 MapPosition
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
 ---@return number
 function Position.angle(pos1, pos2)
     local dist = Position.distance(pos1, pos2)
@@ -762,24 +794,24 @@ function Position.angle(pos1, pos2)
 end
 
 --- Return the cross product of two positions.
----@param pos1 MapPosition
----@param pos2 MapPosition
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
 ---@return number
 function Position.cross(pos1, pos2)
     return pos1.x * pos2.y - pos1.y * pos2.x
 end
 
 -- Return the dot product of two positions.
----@param pos1 MapPosition
----@param pos2 MapPosition
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
 ---@return number
 function Position.dot(pos1, pos2)
     return pos1.x * pos2.x + pos1.y * pos2.y
 end
 
 --- Tests whether or not the two given positions are equal.
----@param pos1 MapPosition
----@param pos2 MapPosition
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
 ---@return boolean equal true if the positions are equal
 function Position.equals(pos1, pos2)
     if not (pos1 and pos2) then return false end
@@ -788,24 +820,24 @@ function Position.equals(pos1, pos2)
 end
 
 --- Is pos1 less than pos2.
----@param pos1 MapPosition
----@param pos2 MapPosition
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
 ---@return boolean
 function Position.less_than(pos1, pos2)
     return Position.len(pos1) < Position.len(pos2)
 end
 
 --- Is pos1 less than or equal to pos2.
----@param pos1 MapPosition
----@param pos2 MapPosition
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
 ---@return boolean
 function Position.less_than_eq(pos1, pos2)
     return Position.len(pos1) <= Position.len(pos2)
 end
 
 --- Calculates the Euclidean distance squared between two positions, useful when sqrt is not needed.
----@param pos1 MapPosition
----@param pos2? MapPosition
+---@param pos1 MapPosition.struct
+---@param pos2? MapPosition.struct
 ---@return number distance_squared the square of the Euclidean distance
 function Position.distance_squared(pos1, pos2)
     pos2 = pos2 or ORIGIN
@@ -815,8 +847,8 @@ function Position.distance_squared(pos1, pos2)
 end
 
 --- Calculates the Euclidean distance between two positions.
----@param pos1 MapPosition
----@param pos2? MapPosition
+---@param pos1 MapPosition.struct
+---@param pos2? MapPosition.struct
 ---@return number distance the Euclidean distance
 function Position.distance(pos1, pos2)
     pos2 = pos2 or ORIGIN
@@ -826,8 +858,8 @@ function Position.distance(pos1, pos2)
 end
 
 --- Calculates the Manhattan distance between two positions.
----@param pos1 MapPosition
----@param pos2? MapPosition the second position
+---@param pos1 MapPosition.struct
+---@param pos2? MapPosition.struct the second position
 ---@return number distance the Manhattan distance
 -- @see https://en.wikipedia.org/wiki/Taxicab_geometry Taxicab geometry (Manhattan distance)
 function Position.manhattan_distance(pos1, pos2)
@@ -836,8 +868,8 @@ function Position.manhattan_distance(pos1, pos2)
 end
 
 --- Returms the direction to a position using simple delta comparisons.
----@param pos1 MapPosition
----@param pos2 MapPosition
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
 ---@return defines.direction
 function Position.direction_to(pos1, pos2)
     local dx = pos1.x - pos2.x
@@ -859,14 +891,17 @@ function Position.direction_to(pos1, pos2)
 end
 
 --- Returns the direction to a position.
----@param pos1 MapPosition
----@param pos2 MapPosition
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
 ---@param eight_way boolean return the eight way direction
 ---@return defines.direction
 function Position.complex_direction_to(pos1, pos2, eight_way)
     return Orientation.to_direction(Position.orientation_to(pos1, pos2), eight_way)
 end
 
+---@param pos1 MapPosition.struct
+---@param pos2 MapPosition.struct
+---@return number orientation
 function Position.orientation_to(pos1, pos2)
     return (1 - (Position.atan2(pos1, pos2) / pi)) / 2
 end
@@ -886,11 +921,11 @@ end
 -- local next_pos = Position.increment({0, 0}, 0, 1)
 -- surface.create_entity{name = 'flying-text', text = 'text', position = next_pos()}
 -- surface.create_entity{name = 'flying-text', text = 'text', position = next_pos()} -- creates two flying text entities 1 tile apart
----@param pos MapPosition the position to start with
+---@param pos MapPosition.struct the position to start with
 ---@param inc_x? number optional increment x by this amount
 ---@param inc_y? number optional increment y by this amount
 ---@param increment_initial? boolean Whether the first use should be incremented
----@return function iterator a function closure that returns a new incremented position
+---@return fun(new_inc_x?: number, new_inc_y?: number): MapPosition.struct iterator a function closure that returns a new incremented position
 function Position.increment(pos, inc_x, inc_y, increment_initial)
     local x, y = pos.x, pos.y
     inc_x, inc_y = inc_x or 0, inc_y or 0
@@ -901,7 +936,7 @@ function Position.increment(pos, inc_x, inc_y, increment_initial)
     -- @see increment
     ---@param new_inc_x? number
     ---@param new_inc_y? number
-    ---@return MapPosition position the incremented position
+    ---@return MapPosition.struct position the incremented position
     return function(new_inc_x, new_inc_y)
         if increment_initial then
             x = x + (new_inc_x or inc_x)

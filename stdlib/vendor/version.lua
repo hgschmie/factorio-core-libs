@@ -54,19 +54,28 @@ local math_max = math.max
 ---@class version
 ---@field [integer] integer
 ---@field strict boolean
+---@field semver fun(self: version, v: string|version): boolean?, string?
 
 ---@class version.range
 ---@field from version
 ---@field to version
 ---@field strict boolean
+---@field matches fun(self: version.range, v: string|version): boolean?, string?
 
 ---@class version.set
 ---@field ok version.range[]
 ---@field nok version.range[]
 ---@field strict boolean
+---@field allowed fun(self: version.set, v1: string|number|version|version.range, v2?: string|number|version): version.set?, string?
+---@field disallowed fun(self: version.set, v1: string|number|version|version.range, v2?: string|number|version): version.set?, string?
+---@field matches fun(self: version.set, v: string|version): boolean?, string?
 
 ---@class version.module
 ---@field strict version.module
+---@field new fun(v: string|number): version?, string?
+---@field range fun(v1?: string|number|version, v2?: string|number|version): version.range?, string?
+---@field set fun(v1: string|number|version|version.range, v2?: string|number|version): version.set?, string?
+---@overload fun(v: string|number): version?, string?
 
 -- Utility split function
 local function split(str, pat)
@@ -93,7 +102,12 @@ local function split(str, pat)
 end
 
 -- foreward declaration of constructor
-local _new, _range, _set
+---@type fun(v: string|number|version, strict?: boolean): version?, string?
+local _new
+---@type fun(v1?: string|number|version, v2?: string|number|version, strict?: boolean): version.range?, string?
+local _range
+---@type fun(v1: string|number|version|version.range, v2?: string|number|version, strict?: boolean): version.set?, string?
+local _set
 
 -- Metatables for version, range and set
 local mt_version
@@ -131,7 +145,8 @@ mt_version = {
             return nil, "Version has too many elements (semver max 3)"
           end
         else
-          local semver_set = _set(self, self[1] + 1, self.strict):disallowed(self[1] + 1)
+          local allowed_set = assert(_set(self, self[1] + 1, self.strict))
+          local semver_set = assert(allowed_set:disallowed(self[1] + 1))
           self.semver = function(_, v2)
             return semver_set:matches(v2)
           end
@@ -202,8 +217,8 @@ local mt_set = {
       --- Adds an ALLOWED range to the set.
       -- @function set:allowed
       ---@param self version.set
-      ---@param v1 string|version|version.range Version or range; a version is the FROM value
-      ---@param v2? string|version TO version
+      ---@param v1 string|number|version|version.range Version or range; a version is the FROM value
+      ---@param v2? string|number|version TO version
       ---@return version.set? set
       ---@return string? error
       allowed = function(self, v1, v2)
@@ -211,7 +226,8 @@ local mt_set = {
           assert (v2 == nil, "First parameter was a range, second must be nil.")
           table_insert(self.ok, v1)
         else
-          local r, err = _range(v1, v2, self.strict)
+          local from = v1 --[[@as string|number|version]]
+          local r, err = _range(from, v2, self.strict)
           if not r then return nil, err end
           table_insert(self.ok, r)
         end
@@ -220,8 +236,8 @@ local mt_set = {
       --- Adds a DISALLOWED range to the set.
       -- @function set:disallowed
       ---@param self version.set
-      ---@param v1 string|version|version.range Version or range; a version is the FROM value
-      ---@param v2? string|version TO version
+      ---@param v1 string|number|version|version.range Version or range; a version is the FROM value
+      ---@param v2? string|number|version TO version
       ---@return version.set? set
       ---@return string? error
       disallowed = function(self,v1, v2)
@@ -229,7 +245,8 @@ local mt_set = {
           assert (v2 == nil, "First parameter was a range, second must be nil.")
           table_insert(self.nok, v1)
         else
-          local r, err = _range(v1, v2, self.strict)
+          local from = v1 --[[@as string|number|version]]
+          local r, err = _range(from, v2, self.strict)
           if not r then return nil, err end
           table_insert(self.nok, r)
         end
@@ -322,7 +339,9 @@ _new = function(v, strict)
     t[i] = n
   end
   t.strict = strict
-  return setmetatable(t, mt_version)
+  local result = setmetatable(t, mt_version)
+  ---@cast result version
+  return result
 end
 
 _range = function(v1,v2, strict)
@@ -331,22 +350,28 @@ _range = function(v1,v2, strict)
   v1 = v1 or "0"
   v2 = v2 or v1
   if getmetatable(v1) ~= mt_version then
-    v1, err = _new(v1, strict)
-    if not v1 then return nil, err end
+    local parsed
+    parsed, err = _new(v1, strict)
+    if not parsed then return nil, err end
+    v1 = parsed
   end
   if getmetatable(v2) ~= mt_version then
-    v2, err = _new(v2, strict)
-    if not v2 then return nil, err end
+    local parsed
+    parsed, err = _new(v2, strict)
+    if not parsed then return nil, err end
+    v2 = parsed
   end
   if v1 > v2 then
     return nil, "FROM version must be less than or equal to the TO version"
   end
 
-  return setmetatable({
+  local result = setmetatable({
     from = v1,
     to = v2,
     strict = strict,
   }, mt_range)
+  ---@cast result version.range
+  return result
 end
 
 _set = function(v1, v2, strict)
@@ -354,9 +379,11 @@ _set = function(v1, v2, strict)
     ok = {},
     nok = {},
     strict = strict,
-  }, mt_set):allowed(v1, v2)
+  }, mt_set) --[[@as version.set]]:allowed(v1, v2)
 end
 
+---@param strict boolean
+---@return version.module module
 local make_module = function(strict)
   return setmetatable({
     --- Creates a new version object from a string.
@@ -400,7 +427,7 @@ local make_module = function(strict)
     __call = function(self, ...)
       return self.new(...)
     end
-  })
+  }) --[[@as version.module]]
 end
 
 ---@type version.module

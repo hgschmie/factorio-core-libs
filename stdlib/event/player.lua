@@ -17,7 +17,6 @@ local Game = require('stdlib.game')
 local table = require('stdlib.utils.table')
 local merge_additional_data = require('stdlib.event.modules.merge_data')
 local assert, type = assert, type
-local inspect = _ENV.inspect
 
 -- Return new default player object consisting of index, name, force
 local function new(player_index)
@@ -41,19 +40,19 @@ function Player.additional_data(...)
 end
 
 --- Get `game.players[index]` & `storage.players[index]`, or create `storage.players[index]` if it doesn't exist.
----@param player number|string|LuaPlayer the player index to get data for
+---@param player uint32|string|LuaPlayer the player index to get data for
 ---@return LuaPlayer player the player instance
 ---@return table player_data the player's storage data
 -- @usage
 -- local Player = require('stdlib.event.player')
 -- local player, player_data = Player.get(event.player_index)
 function Player.get(player)
-    player = Game.get_player(player)
-    return player, Player.pdata(player.index)
+    local player_object = assert(Game.get_player(player), 'player is missing')
+    return player_object, Player.pdata(player_object.index)
 end
 
 --- Get the players saved data table. Creates it if it doesn't exist.
----@param index number The player index to get data for
+---@param index uint32 The player index to get data for
 ---@return table player_data the player's storage data
 function Player.pdata(index)
     return storage.players and storage.players[index] or Player.init(index)
@@ -71,7 +70,8 @@ end
 -- @usage local data = {a = 'abc', b = 'def'}
 -- Player.add_data_all(data)
 function Player.add_data_all(data)
-    local pdata = storage.players
+    storage.players = storage.players or {}
+    local pdata = storage.players --[[@as table<uint32, table>]]
     table.each(
         pdata,
         function(v)
@@ -88,14 +88,14 @@ end
 
 --- Init or re-init a player or players.
 -- Passing a `nil` event will iterate all existing players.
----@param event? number|table|string|LuaPlayer
+---@param event? uint32|table<string, any>|string|LuaPlayer
 ---@param overwrite? boolean the player data
 function Player.init(event, overwrite)
     -- Create the storage.players table if it doesn't exisit
     storage.players = storage.players or {}
 
     --get a valid player object or nil
-    local player = Game.get_player(event)
+    local player = event and Game.get_player(event) or nil
 
     if player then --If player is not nil then we are working with a valid player.
         if not storage.players[player.index] or (storage.players[player.index] and overwrite) then

@@ -9,6 +9,8 @@
 
 local Event = require('stdlib.event.event')
 
+---@class event.Force
+---@field get_file_path fun(append: string): string
 local Force = {
     __class = 'Force',
     __index = require('stdlib.core'),
@@ -54,9 +56,8 @@ end
 -- local force_name, force_data = Force.get(game.forces["player"])
 -- -- Returns data for the force named "player" from either a string or LuaForce object
 function Force.get(force)
-    force = Game.get_force(force)
-    assert(force, 'force is missing')
-    return game.forces[force.name], storage.forces and storage.forces[force.name] or Force.init(force.name)
+    local force_object = assert(Game.get_force(force), 'force is missing')
+    return game.forces[force_object.name], storage.forces and storage.forces[force_object.name] or Force.init(force_object.name)
 end
 
 --- Merge a copy of the passed data to all forces in `storage.forces`.
@@ -75,12 +76,12 @@ end
 
 --- Init or re-init a force or forces.
 -- Passing a `nil` event will iterate all existing forces.
----@param event? string|table table or a string containing force name
+---@param event? string|LuaForce|table<string, any> table, force, or force name
 ---@param overwrite? boolean the force data
 function Force.init(event, overwrite)
     storage.forces = storage.forces or {}
 
-    local force = Game.get_force(event)
+    local force = event and Game.get_force(event) or nil
 
     if force then
         if not storage.forces[force.name] or (storage.forces[force.name] and overwrite) then

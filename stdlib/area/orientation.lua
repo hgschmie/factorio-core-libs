@@ -38,14 +38,27 @@ Orientation.westsouthwest = defines.direction.westsouthwest / 16
 
 local floor = math.floor
 
+---@type table<integer, defines.direction>
+local directions = {
+    [0] = defines.direction.north,
+    [2] = defines.direction.northeast,
+    [4] = defines.direction.east,
+    [6] = defines.direction.southeast,
+    [8] = defines.direction.south,
+    [10] = defines.direction.southwest,
+    [12] = defines.direction.west,
+    [14] = defines.direction.northwest
+}
+
 --- Returns a 4way or 8way direction from an orientation.
 ---@param orientation number
 ---@param eight_way? boolean
----@return defines.direction
+---@return defines.direction direction
 function Orientation.to_direction(orientation, eight_way)
-    local ways = eight_way and 16 or 8
-    local mod = eight_way and 2 or 4
-    return floor(orientation * ways + 0.5) % ways * mod
+    local ways = eight_way and 8 or 4
+    local step = eight_way and 2 or 4
+    local direction = floor(orientation * ways + 0.5) % ways * step
+    return assert(directions[direction])
 end
 
 --- Returns the opposite orientation.

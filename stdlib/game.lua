@@ -10,13 +10,14 @@ setmetatable(Game, Game)
 local inspect = _ENV.inspect
 
 --- Return a valid player object from event, index, string, or userdata
----@param mixed string|number|LuaPlayer|table<string, any>
+---@param mixed string|uint32|LuaPlayer|table<string, any>
 ---@return LuaPlayer? player a valid player or nil
 function Game.get_player(mixed)
     if type(mixed) == 'table' then
+        local object = mixed --[[@as table<string, any>]]
         if mixed.player_index then
             return game.get_player(mixed.player_index)
-        elseif mixed.__self and mixed.valid then
+        elseif object.__self and mixed.valid then
             return mixed --[[@as LuaPlayer]]
         end
     elseif type(mixed) == 'string' or type(mixed) == 'number' then
@@ -29,27 +30,31 @@ end
 ---@return LuaForce? force a valid force or nil
 function Game.get_force(mixed)
     if type(mixed) == 'table' then
-        if mixed.__self and mixed.valid then
+        local object = mixed --[[@as table<string, any>]]
+        if object.__self and mixed.valid then
             return mixed --[[@as LuaForce]]
         elseif mixed.force then
             return Game.get_force(mixed.force)
         end
     elseif type(mixed) == 'string' then
         local force = game.forces[mixed]
-        return (force and force.valid) and force
+        return force and force.valid and force or nil
     end
 end
 
+---@param mixed string|uint32|LuaSurface|table<string, any>
+---@return LuaSurface? surface a valid surface or nil
 function Game.get_surface(mixed)
     if type(mixed) == 'table' then
-        if mixed.__self then
-            return mixed.valid and mixed
+        local object = mixed --[[@as table<string, any>]]
+        if object.__self and mixed.valid then
+            return mixed --[[@as LuaSurface]]
         elseif mixed.surface then
             return Game.get_surface(mixed.surface)
         end
     elseif mixed then
         local surface = game.surfaces[mixed]
-        return surface and surface.valid and surface
+        return surface and surface.valid and surface or nil
     end
 end
 
@@ -85,13 +90,14 @@ end
 ---@return any value the chunk value stored at the key or the previous value
 function Game.get_or_set_data(sub_table, index, key, set, value)
     assert(type(sub_table) == 'string', 'sub_table must be a string')
-    storage[sub_table] = storage[sub_table] or {}
+    local data = (storage[sub_table] or {}) --[[@as table<any, any>]]
+    storage[sub_table] = data
     local this
     if index then
-        storage[sub_table][index] = storage[sub_table][index] or {}
-        this = storage[sub_table][index]
+        data[index] = data[index] or {}
+        this = data[index]
     else
-        this = storage[sub_table]
+        this = data
     end
     local previous
 

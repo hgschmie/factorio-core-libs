@@ -37,11 +37,37 @@ Direction.southsouthwest = defines.direction.southsouthwest
 Direction.westnorthwest = defines.direction.westnorthwest
 Direction.westsouthwest = defines.direction.westsouthwest
 
+---@type table<integer, defines.direction>
+local directions = {
+    [0] = Direction.north,
+    Direction.northnortheast,
+    Direction.northeast,
+    Direction.eastnortheast,
+    Direction.east,
+    Direction.eastsoutheast,
+    Direction.southeast,
+    Direction.southsoutheast,
+    Direction.south,
+    Direction.southsouthwest,
+    Direction.southwest,
+    Direction.westsouthwest,
+    Direction.west,
+    Direction.westnorthwest,
+    Direction.northwest,
+    Direction.northnorthwest
+}
+
+---@param direction number
+---@return defines.direction direction
+local function normalize(direction)
+    return assert(directions[math.floor(direction % 16)])
+end
+
 --- Returns the opposite direction
 ---@param direction defines.direction the direction
 ---@return defines.direction direction the opposite direction
 function Direction.opposite(direction)
-    return (direction + 8) % 16
+    return normalize(direction + 8)
 end
 
 --- Returns the next direction.
@@ -50,7 +76,7 @@ end
 ---@param eight_way? boolean true to get the next direction in 8-way (note: not many prototypes support 8-way)
 ---@return defines.direction direction the next direction
 function Direction.next(direction, eight_way)
-    return (direction + (eight_way and 2 or 4)) % 16
+    return normalize(direction + (eight_way and 2 or 4))
 end
 
 --- Returns the previous direction.
@@ -59,7 +85,7 @@ end
 ---@param eight_way? boolean true to get the previous direction in 8-way (note: not many prototypes support 8-way)
 ---@return defines.direction direction the next direction
 function Direction.previous(direction, eight_way)
-    return (direction + (eight_way and -2 or -4)) % 16
+    return normalize(direction + (eight_way and -2 or -4))
 end
 
 --- Returns an orientation from a direction.
@@ -72,10 +98,13 @@ end
 --- Returns a vector from a direction.
 ---@param direction defines.direction
 ---@param distance? number
----@return MapPosition
+---@return MapPosition.struct vector
 function Direction.to_vector(direction, distance)
     distance = distance or 1
-    local x, y = 0, 0
+    ---@type number
+    local x = 0
+    ---@type number
+    local y = 0
     if direction == Direction.north then
         y = y - distance
     elseif direction == Direction.northeast then
@@ -110,8 +139,12 @@ do
         return Orientation.to_direction(orientation, true)
     end
 
+    ---@param direction defines.direction
+    ---@param reverse? boolean
+    ---@param eight_way? boolean
+    ---@return defines.direction direction
     function Direction.next_direction(direction, reverse, eight_way)
-        return (direction + (eight_way and ((reverse and -2) or 2) or ((reverse and -4) or 4))) % 16
+        return normalize(direction + (eight_way and ((reverse and -2) or 2) or ((reverse and -4) or 4)))
     end
 end
 

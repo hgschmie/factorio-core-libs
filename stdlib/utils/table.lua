@@ -187,6 +187,7 @@ end
 ---@param tbl number[] the array with only numeric values
 ---@return number sum the sum of the numbers or zero if the given array was empty
 function Table.sum(tbl)
+    ---@type number
     local sum = 0
     for _, num in pairs(tbl) do sum = sum + num end
     return sum

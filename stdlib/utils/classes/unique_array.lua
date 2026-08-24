@@ -44,31 +44,31 @@ end
 
 local wrappers = {}
 
+---@param tab table
+---@return unique_array array
 local function create_class(tab)
-    if type(tab) == 'table' then
-        local class = {
-            __concat = M.concat,
-            __tostring = M.tostring,
-            __eq = M.same,
-            __lt = wrappers.__lt,
-            __add = wrappers.__add,
-            __sub = wrappers.__sub,
-            __lte = wrappers.__lt,
-            len = 0
-        }
+    local class = {
+        __concat = M.concat,
+        __tostring = M.tostring,
+        __eq = M.same,
+        __lt = wrappers.__lt,
+        __add = wrappers.__add,
+        __sub = wrappers.__sub,
+        __lte = wrappers.__lt,
+        len = 0
+    }
 
-        class.dictionary = M.make_dictionary(tab)
+    class.dictionary = M.make_dictionary(tab)
 
-        class.__index = function(_, k)
-            return class.dictionary[k] or M[k]
-        end
-
-        return setmetatable(tab, class)
+    class.__index = function(_, k)
+        return class.dictionary[k] or M[k]
     end
+
+    return setmetatable(tab, class) --[[@as unique_array]]
 end
 
 local function unique_or_new(tab)
-    if type(tab) == table and tab.__class == 'unique_array' then
+    if type(tab) == 'table' and tab.__class == 'unique_array' then
         return tab
     else
         return M.new(tab)
@@ -97,7 +97,14 @@ end
 ---@param ... unique_array|string|string[] strings to initialize the unique array with
 ---@return unique_array array
 function M.new(...)
-    return create_class {}:add(type((...)) == 'table' and (...) or { ... })
+    ---@type unique_array|string|string[]
+    local initial
+    if type((...)) == 'table' then
+        initial = (...)
+    else
+        initial = { ... } --[[@as string[] ]]
+    end
+    return create_class {}:add(initial)
 end
 
 --- Add a string to the array if it doesn't exist in the array.

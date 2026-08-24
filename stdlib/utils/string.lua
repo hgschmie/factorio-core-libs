@@ -215,9 +215,10 @@ function String.split(s, sep, pattern, func)
     local last_find = 1
     while start_idx do
         local substr = s:sub(last_find, start_idx - 1)
-        if substr:len() > 0 then table.insert(fields, func(s:sub(last_find, start_idx - 1))) end
-        last_find = end_idx + 1
-        start_idx, end_idx = s:find(sep, end_idx + 1)
+        if substr:len() > 0 then insert(fields, func(s:sub(last_find, start_idx - 1))) end
+        local match_end = assert(end_idx)
+        last_find = match_end + 1
+        start_idx, end_idx = s:find(sep, match_end + 1)
     end
     local substr = s:sub(last_find)
     if substr:len() > 0 then insert(fields, func(s:sub(last_find))) end
@@ -242,7 +243,7 @@ function String.ordinal_suffix(n, prepend_number)
             return (prepend_number and n or '') .. 'th'
         end
     end
-    return prepend_number and n
+    return prepend_number and tostring(n) or ''
 end
 
 local exponent_multipliers = {
@@ -269,14 +270,14 @@ local exponent_multipliers = {
 }
 
 --- Convert a metric string prefix to a number value.
----@param str string
+---@param str string|number
 ---@return number
 function String.exponent_number(str)
     if type(str) == 'string' then
         local value, exp = str:match('([%-+]?[0-9]*%.?[0-9]+)([yzafpnumcdhkMGTPEZY]?)') ---@diagnostic disable-line: spell-check
         exp = exp or ' '
-        value = (value or 0) * (exponent_multipliers[exp] or 1)
-        return value
+        local numeric_value = tonumber(value) or 0
+        return numeric_value * (exponent_multipliers[exp] or 1)
     elseif type(str) == 'number' then
         return str
     end

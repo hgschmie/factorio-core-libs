@@ -26,6 +26,7 @@ end
 
 function Filters.player.cursor_stack(event, pattern)
     local player = game.get_player(event.player_index)
+    if not player then return false end
     local stack = player.cursor_stack
     return stack and stack.valid_for_read and stack.name:match(pattern)
 end

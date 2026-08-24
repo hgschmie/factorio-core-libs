@@ -45,7 +45,6 @@ local math_max = math.max
 local math_huge = math.huge
 local math_pi = math.pi
 local math_log = math.log
-local unpack = table.unpack
 
 -- (( Math Constants
 Math.DEG2RAD = math_pi / 180
@@ -90,8 +89,14 @@ Math.MIN_INT64 = Math.MININT64
 Math.MAX_UINT64 = Math.MAXUINT64
 -- ))
 
+---@param ... number|number[]
+---@return number[] values
 local function tuple(...)
-    return type(...) == 'table' and ... or { ... }
+    local values = (...)
+    if type(values) == 'table' then
+        return values
+    end
+    return { ... } --[[@as number[] ]]
 end
 
 function Math.log10(x)
@@ -137,10 +142,11 @@ end
 -- See: http://en.wikipedia.org/wiki/Average
 
 --- Calculates the sum of a sequence of values.
----@param ... number a tuple of numbers
+---@param ... number|number[] a tuple of numbers or a single array
 ---@return number sum the sum
 function Math.sum(...)
     local x = tuple(...)
+    ---@type number
     local s = 0
     for _, v in ipairs(x) do s = s + v end
     return s
@@ -162,6 +168,7 @@ Math.average = Math.arithmetic_mean
 ---@return number mean the geometric mean
 function Math.geometric_mean(...)
     local x = tuple(...)
+    ---@type number
     local prod = 1
     for _, v in ipairs(x) do prod = prod * v end
     return (prod ^ (1 / #x))
@@ -172,6 +179,7 @@ end
 ---@return number mean the harmonic mean
 function Math.harmonic_mean(...)
     local x = tuple(...)
+    ---@type number
     local s = 0
     for _, v in ipairs(x) do s = s + (1 / v) end
     return (#x / s)
@@ -182,6 +190,7 @@ end
 ---@return number mean the quadratic mean
 function Math.quadratic_mean(...)
     local x = tuple(...)
+    ---@type number
     local squares = 0
     for _, v in ipairs(x) do squares = squares + (v * v) end
     return math.sqrt((1 / #x) * squares)
@@ -193,6 +202,7 @@ end
 ---@return number mean the generalized mean
 function Math.generalized_mean(p, ...)
     local x = tuple(...)
+    ---@type number
     local sump = 0
     for _, v in ipairs(x) do sump = sump + (v ^ p) end
     return ((1 / #x) * sump) ^ (1 / p)
@@ -203,8 +213,9 @@ end
 ---@param w number[] an array of number weights for each value
 ---@return number mean the weighted mean
 function Math.weighted_mean(x, w)
+    ---@type number
     local sump = 0
-    for i, v in ipairs(x) do sump = sump + (v * w[i]) end
+    for i, v in ipairs(x) do sump = sump + (v * assert(w[i], 'missing weight')) end
     return sump / Math.sum(w)
 end
 
@@ -213,7 +224,13 @@ end
 ---@return number mean the midrange mean
 function Math.midrange_mean(...)
     local x = tuple(...)
-    return 0.5 * (math_min(unpack(x)) + math_max(unpack(x)))
+    local first = assert(x[1], 'missing number')
+    local minimum, maximum = first, first
+    for i = 2, #x do
+        minimum = math_min(minimum, x[i])
+        maximum = math_max(maximum, x[i])
+    end
+    return 0.5 * (minimum + maximum)
 end
 
 --- Calculates the energetic mean of a set of values.
@@ -221,6 +238,7 @@ end
 ---@return number mean the energetic mean
 function Math.energetic_mean(...)
     local x = tuple(...)
+    ---@type number
     local s = 0
     for _, v in ipairs(x) do s = s + (10 ^ (v / 10)) end
     return 10 * Math.log10((1 / #x) * s)

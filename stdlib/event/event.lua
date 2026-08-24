@@ -16,7 +16,36 @@
 local config = require('stdlib.config')
 config.control = true
 
+---@alias stdlib.event_id defines.events | integer
+---@alias stdlib.event_type stdlib.event_id | string
+
+---@class event.Options
+---@field protected_mode boolean
+---@field skip_valid boolean
+---@field force_crc boolean
+---@field framework boolean
+
+---@class event.RegistryEntry
+---@field handler fun(event: event.EventData)
+---@field filter? fun(event: event.EventData, pattern?: any): boolean
+---@field pattern? any
+---@field options event.Options
+
+---@class event.Script
+---@field on_event fun(event_id: stdlib.event_type|stdlib.event_type[], handler?: fun(event: event.EventData))
+---@field on_nth_tick fun(tick: uint, handler?: fun(event: event.EventData))
+---@field on_init fun(handler?: fun())
+---@field on_load fun(handler?: fun())
+---@field on_configuration_changed fun(handler?: fun(event: ConfigurationChangedData))
+---@field generate_event_name fun(): integer
+---@field get_event_handler fun(event_id: stdlib.event_type): function?
+---@field [string] function
+
 ---@class event.Event
+---@field registry table<stdlib.event_type, event.RegistryEntry[]>
+---@field custom_events table<string, stdlib.event_id>
+---@field options event.Options
+---@field script event.Script
 local Event = {
     __class = 'Event',
     registry = {},        -- Holds registered events
@@ -27,6 +56,7 @@ local Event = {
 }
 setmetatable(Event, Event)
 
+---@type event.Options
 Event.options = {
     protected_mode = false,
     skip_valid = false,
@@ -46,17 +76,18 @@ Event.core_events = {
     init_and_load = { 'on_init', 'on_load' }
 }
 
+---@type event.Script
 Event.script = {
-    on_event = script.on_event,
-    on_nth_tick = script.on_nth_tick,
+    on_event = (script --[[@as any]]).on_event,
+    on_nth_tick = (script --[[@as any]]).on_nth_tick,
     on_init = script.on_init,
     on_load = script.on_load,
     on_configuration_changed = script.on_configuration_changed,
     generate_event_name = script.generate_event_name,
-    get_event_handler = script.get_event_handler,
+    get_event_handler = (script --[[@as any]]).get_event_handler,
 }
 
----@type table<defines.events, boolean>
+---@type table<stdlib.event_type, boolean>
 local PRIORITY = {
     -- creation events
     -- mod events before framework events
@@ -130,9 +161,6 @@ local stupid_events = {
     [defines.events.on_entity_cloned] = 'destination'
 }
 
----@alias stdlib.event_id defines.events | integer
----@alias stdlib.event_type stdlib.event_id | string
-
 --- Registers a handler for the given events.
 -- If a `nil` handler is passed, remove the given events and stop listening to them.
 -- <p>Events dispatch in the order they are registered.
@@ -148,10 +176,10 @@ local stupid_events = {
 -- -- Function call chaining
 -- Event.register(event1, handler1).register(event2, handler2)
 ---@param event_id stdlib.event_type | stdlib.event_type[]
----@param handler fun(event: EventData) the function to call when the given events are triggered
----@param filter? fun(event: EventData, pattern?: any): boolean a function whose return determines if the handler is executed
+---@param handler fun(event: event.EventData) the function to call when the given events are triggered
+---@param filter? fun(event: event.EventData, pattern?: any): boolean a function whose return determines if the handler is executed
 ---@param pattern? any an invariant passed as the second argument to the filter
----@param options? table<string, any> options that take precedence over the module defaults
+---@param options? event.Options options that take precedence over the module defaults
 ---@return event.Event
 function Event.register(event_id, handler, filter, pattern, options)
     assert(event_id, 'missing event_id argument')
@@ -159,12 +187,13 @@ function Event.register(event_id, handler, filter, pattern, options)
     assert(filter == nil or Type.Function(filter), 'filter must be a function when present')
     assert(options == nil or Type.Table(options), 'options must be a table when present')
 
-    options = setmetatable(options or {}, Event_options_meta)
+    ---@type event.Options
+    local registration_options = setmetatable(options or {}, Event_options_meta)
 
     --Recursively handle event id tables
-    if Type.Table(event_id) then
+    if type(event_id) == 'table' then
         for _, id in pairs(event_id) do
-            Event.register(id, handler, filter, pattern, options)
+            Event.register(id, handler, filter, pattern, registration_options)
         end
         return Event
     end
@@ -176,7 +205,7 @@ function Event.register(event_id, handler, filter, pattern, options)
     if not Event.registry[event_id] then
         Event.registry[event_id] = {}
 
-        if Type.String(event_id) then
+        if type(event_id) == 'string' then
             --String event ids will either be Bootstrap events or custom input events
             if bootstrap_events[event_id] then
                 Event.script[event_id](bootstrap_events[event_id])
@@ -188,11 +217,12 @@ function Event.register(event_id, handler, filter, pattern, options)
             Event.script.on_event(event_id, Event.dispatch)
         elseif event_id < 0 then
             --Use negative values to register on_nth_tick
-            Event.script.on_nth_tick(math.abs(event_id) --[[@as uint]], Event.dispatch)
+            local nth_tick = event_id --[[@as integer]]
+            Event.script.on_nth_tick(math.floor(math.abs(nth_tick)) --[[@as uint]], Event.dispatch)
         end
     end
 
-    local registry = Event.registry[event_id]
+    local registry = assert(Event.registry[event_id])
 
     --If handler is already registered for this event: remove it for re-insertion at the end.
     if #registry > 0 then
@@ -215,12 +245,12 @@ function Event.register(event_id, handler, filter, pattern, options)
     --Finally insert the handler
 
     local prio = PRIORITY[event_id]
-    local registry_entry = { handler = handler, filter = filter, pattern = pattern, options = options }
+    local registry_entry = { handler = handler, filter = filter, pattern = pattern, options = registration_options }
 
     -- has a priority assigned
     if prio ~= nil then
         -- framework events are inserted from the opposite end as mod events
-        if options.framework then prio = not prio end
+        if registration_options.framework then prio = not prio end
 
         if prio then
             -- true -> Insert at the head
@@ -243,15 +273,15 @@ end
 -- and can be a custom input name which is in <span class="types">@{string}</span>.
 -- <p>The `event_id` parameter takes in either a single, multiple, or mixture of @{defines.events}, @{int}, and @{string}.
 ---@param event_id stdlib.event_type | stdlib.event_type[]
----@param handler? fun(event: EventData) the handler to remove; removes all handlers for the event when omitted
----@param filter? fun(event: EventData, pattern?: any): boolean
+---@param handler? fun(event: event.EventData) the handler to remove; removes all handlers for the event when omitted
+---@param filter? fun(event: event.EventData, pattern?: any): boolean
 ---@param pattern? any
 ---@return event.Event
 function Event.remove(event_id, handler, filter, pattern)
     assert(event_id, 'missing event_id argument')
 
     -- Handle recursion here
-    if Type.Table(event_id) then
+    if type(event_id) == 'table' then
         for _, id in pairs(event_id) do
             Event.remove(id, handler)
         end
@@ -310,7 +340,7 @@ function Event.remove(event_id, handler, filter, pattern)
             -- Clear the registry data and un subscribe if there are no registered handlers left
             Event.registry[event_id] = nil
 
-            if Type.String(event_id) then
+            if type(event_id) == 'string' then
                 -- String event ids will either be Bootstrap events or custom input events
                 if bootstrap_events[event_id] then
                     Event.script[event_id](nil)
@@ -322,7 +352,8 @@ function Event.remove(event_id, handler, filter, pattern)
                 Event.script.on_event(event_id, nil)
             elseif event_id < 0 then
                 -- Use negative values to remove on_nth_tick
-                Event.script.on_nth_tick(math.abs(event_id) --[[@as uint]], nil)
+                local nth_tick = event_id --[[@as integer]]
+                Event.script.on_nth_tick(math.floor(math.abs(nth_tick)) --[[@as uint]], nil)
             end
         elseif not found_something then
             log('Attempt to deregister already non-registered listener from event: ' .. event_id)
@@ -366,14 +397,15 @@ function Event.on_init_if(truthy, ...)
 end
 
 --- Shortcut for `Event.register(-nthTick, function)`
+---@param nth_tick integer
 ---@return event.Event
 function Event.on_nth_tick(nth_tick, ...)
-    return Event.register(-math.abs(nth_tick), ...)
+    return Event.register(-math.floor(math.abs(nth_tick)), ...)
 end
 
 --- Shortcut for `Event.register(defines.events, function)`
 -- @function Event.on_event
----@type fun(event_id: stdlib.event_type | stdlib.event_type[], handler: fun(event: EventData), filter?: (fun(event: EventData, pattern?: any): boolean), pattern?: any, options?: table<string, any>): event.Event
+---@type fun(event_id: stdlib.event_type | stdlib.event_type[], handler: fun(event: event.EventData), filter?: (fun(event: event.EventData, pattern?: any): boolean), pattern?: any, options?: event.Options): event.Event
 Event.on_event = Event.register
 
 function Event.register_if(truthy, id, ...)
@@ -462,7 +494,8 @@ function Event.dispatch(event)
     elseif event.input_name and Event.registry[event.input_name] then
         registry = Event.registry[event.input_name]
     elseif event.nth_tick then
-        registry = Event.registry[-event.nth_tick]
+        local nth_tick_event = -event.nth_tick --[[@as integer]]
+        registry = Event.registry[nth_tick_event]
     end
 
     if registry then
@@ -526,10 +559,8 @@ end
 function Event.generate_event_name(event_name)
     assert(Type.String(event_name), 'event_name must be a string.')
 
-    local id
-    if Type.Number(Event.custom_events[event_name]) then
-        id = Event.custom_events[event_name]
-    else
+    local id = Event.custom_events[event_name]
+    if id == nil then
         id = Event.script.generate_event_name()
         Event.custom_events[event_name] = id
     end

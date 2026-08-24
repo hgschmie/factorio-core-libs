@@ -7,7 +7,10 @@
 -- local surface = require('stdlib.event.surface').register_events()
 
 local Event = require('stdlib.event.event')
+local Game = require('stdlib.game')
 
+---@class event.Surface
+---@field get_file_path fun(append: string): string
 local Surface = {
     __class = 'Surface',
     _new_surface_data = {}
@@ -56,14 +59,14 @@ end
 
 --- Init or re-init the surfaces.
 -- Passing a `nil` event will iterate all existing surfaces.
----@param event? number|table|string|LuaSurface
+---@param event? uint32|table<string, any>|string|LuaSurface
 ---@param overwrite? boolean the surface data
 function Surface.init(event, overwrite)
     -- Create the storage.surfaces table if it doesn't exisit
     storage.surfaces = storage.surfaces or {}
 
     --get a valid surface object or nil
-    local surface = game.surfaces[event.surface_index]
+    local surface = event and Game.get_surface(event) or nil
 
     if surface then
         if not storage.surfaces[surface.index] or (storage.surfaces[surface.index] and overwrite) then
