@@ -8,7 +8,7 @@ local table = require('stdlib.utils.table')
 assert(Framework)
 
 ---@enum FrameworkSettings.name
-local setting_types = {
+local _setting_types = {
     startup = 'startup',
     runtime = 'runtime',
     player = 'player',
@@ -102,11 +102,9 @@ end
 ---@param definitions table<FrameworkSettings.name, FrameworkSettingsGroup>
 ---@return self FrameworkSettings
 function FrameworkSettings:add_defaults(definitions)
-    for key in pairs(setting_types) do
-        if settings_table[key].definitions then
-            table.merge(settings_table[key].definitions, definitions[key])
-            settings_table[key]:clear()
-        end
+    for key, value in pairs(settings_table) do
+        table.merge(value.definitions, definitions[key])
+        value:clear()
     end
 
     return self
