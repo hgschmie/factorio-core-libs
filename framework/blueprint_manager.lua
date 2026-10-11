@@ -153,7 +153,7 @@ local function on_player_setup_blueprint(event)
 
     -- See https://forums.factorio.com/viewtopic.php?p=661598#p661598 for the event.record / event.stack selection
     ---@type (LuaItemStack | LuaRecord)?
-    local blueprint_item_stack = event.record or event.stack or (can_access_blueprint(player) and player.cursor_stack)
+    local blueprint_item_stack = event.record or event.stack or (can_access_blueprint(player) and player.cursor_stack or nil)
 
     if blueprint_item_stack then
         self:augmentBlueprint(blueprint_item_stack, entity_map, context)
