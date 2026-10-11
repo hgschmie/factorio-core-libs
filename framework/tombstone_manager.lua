@@ -177,7 +177,7 @@ function FrameworkTombstoneManager:retrieveTombstoneFromBlueprintEntity(blueprin
     if not tombstone then return end
 
     local data = tombstone.data
-    callback.apply_tombstone(data, blueprint_entity.position, surface_index, blueprint_entity.name)
+    callback.apply_tombstone(data, blueprint_entity.position, surface_index, tostring(blueprint_entity.name))
 end
 
 --- Retrieves a tombstone created at the current tick from the same position
