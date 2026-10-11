@@ -74,7 +74,7 @@ function FrameworkGhostManager:registerGhost(entity, player_index)
     ---@type ff2.ghost_manager.AttachedEntity
     local attached_entity = {
         entity = entity,
-        key = tools:createEntityKeyFromEntity(entity),
+        key = assert(tools:createEntityKeyFromEntity(entity)),
         tags = entity.tags,
         player_index = player_index,
         -- allow 10 seconds of lingering time until a refresh must have happened
@@ -86,7 +86,7 @@ function FrameworkGhostManager:registerGhost(entity, player_index)
         self.ghost_callbacks[entity.ghost_name](attached_entity)
     end
 
-    state.ghost_entities[entity.unit_number] = attached_entity
+    state.ghost_entities[assert(entity.unit_number)] = attached_entity
 end
 
 ---@param unit_number integer
