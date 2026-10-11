@@ -283,7 +283,9 @@ end
 ---@param callback ff2.tombstone.TombstoneCallback
 function FrameworkTombstoneManager:registerCallback(names, callback)
     assert(names)
-    if type(names) ~= 'table' then names = { names --[[@as string ]] } end
+    names = type(names) ~= 'table'
+        and { names --[[@as string ]] }
+        or names
     ---@cast names string[]
 
     for _, name in pairs(names) do
