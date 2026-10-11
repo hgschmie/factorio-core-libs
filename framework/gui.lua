@@ -320,7 +320,7 @@ function FrameworkGui:removeChildrenAndHandlers(ui_element)
                     self:removeChildrenAndHandlers(self.ui_elements[child_name])
                 end
                 for _, event_handlers in pairs(self.event_handlers) do
-                    if event_handlers then event_handlers[child_name] = nil end
+                    event_handlers[child_name] = nil
                 end
             end
         end
