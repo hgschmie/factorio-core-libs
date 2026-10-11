@@ -161,7 +161,7 @@ function FrameworkGuiManager:dispatch(event)
         ---@type framework.gui.custominput_data
         local data = {
             input_name = handler_id,
-            player_index = event.player_index,
+            player_index = player_index,
             tick = game.tick
         }
         input_handler(data, gui)
@@ -316,7 +316,7 @@ function FrameworkGuiManager:createGui(map)
         gui_events = table.array_to_dictionary(table.keys(gui_type.events)),
         custominput_events = table.array_to_dictionary(table.keys(gui_type.custominput_events)),
         entity_id = map.entity_id,
-        player_index = map.player_index,
+        player_index = player_index,
         context = map.context or {},
     }
 
