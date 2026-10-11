@@ -150,9 +150,9 @@ end
 --- Flushes all cached settings.
 --- The next access to a setting will reload them from the game.
 function FrameworkSettings:flush()
-    settings_table.player:clear()
-    settings_table.runtime:clear()
-    settings_table.startup:clear()
+    for _, value in pairs(settings_table) do
+        value:clear()
+    end
 
     self.DEBUG_LEVEL = nil
 end
