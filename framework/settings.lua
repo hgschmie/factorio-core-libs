@@ -95,7 +95,7 @@ function FrameworkSettings:get_debug_level()
     if not FrameworkSettings.DEBUG_LEVEL then
         FrameworkSettings.DEBUG_LEVEL = tonumber(self:startup_setting('debug_mode')) or 0
     end
-    return FrameworkSettings.DEBUG_LEVEL
+    return FrameworkSettings.DEBUG_LEVEL or 0
 end
 
 --- Add setting definitions of the given setting_type to the corresponding table
