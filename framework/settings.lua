@@ -60,7 +60,9 @@ local settings_table = {
         end,
         store_value = function(name, value, player_index)
             if player_index then
-                game.players[player_index].mod_settings[name] = { value = value }
+                if game.players[player_index] then
+                    game.players[player_index].mod_settings[name] = { value = value }
+                end
             else
                 settings.player_default[name] = { value = value }
             end
