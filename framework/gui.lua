@@ -209,8 +209,8 @@ end
 ---@param child framework.gui.element_definition The elements that are added to the tab.
 ---@return LuaGuiElement gui_element The content of the tab.
 function FrameworkGui:addTab(parent, child)
-    local tab = self:createChildElement(parent, child.tab)
-    local gui_element = self:createChildElement(parent, child.content)
+    local tab = self:createChildElement(parent, assert(child.tab))
+    local gui_element = self:createChildElement(parent, assert(child.content))
     parent.add_tab(tab, gui_element)
 
     return gui_element
