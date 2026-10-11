@@ -124,7 +124,7 @@ end
 ---@param event EventData.on_player_setup_blueprint
 local function on_player_setup_blueprint(event)
     local player, player_data = Player.get(event.player_index)
-    if not (player or player_data) then return end
+    if not (player and player_data) then return end
 
     local self = assert(Framework.blueprint)
 
@@ -170,7 +170,7 @@ end
 ---@param event EventData.on_player_configured_blueprint
 local function on_player_configured_blueprint(event)
     local player, player_data = Player.get(event.player_index)
-    if not (player or player_data) then return end
+    if not (player and player_data) then return end
 
     local self = assert(Framework.blueprint)
 
