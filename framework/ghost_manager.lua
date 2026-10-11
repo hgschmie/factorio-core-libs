@@ -7,7 +7,6 @@ assert(Framework)
 -- Factorio Framework 2 (ff2)
 
 local Event = require('stdlib.event.event')
-local Is = require('stdlib.utils.is')
 local Position = require('stdlib.area.position')
 
 local Matchers = require('framework.matchers')
@@ -168,7 +167,7 @@ end
 ---@param event EventData.on_built_entity | EventData.on_robot_built_entity | EventData.on_space_platform_built_entity | EventData.script_raised_revive | EventData.script_raised_built
 local function on_ghost_entity_created(event)
     local entity = event and event.entity
-    if not Is.Valid(entity) then return end
+    if not (entity and entity.valid) then return end
 
     script.register_on_object_destroyed(entity)
 
@@ -178,7 +177,7 @@ end
 ---@param event EventData.on_post_entity_died
 local function on_post_entity_died(event)
     local entity = event and event.ghost
-    if not Is.Valid(entity) then return end
+    if not (entity and entity.valid) then return end
 
     script.register_on_object_destroyed(entity)
 
