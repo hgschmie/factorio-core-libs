@@ -115,7 +115,7 @@ end
 ---@param player_index integer? The current player index.
 ---@return table<string, FrameworkSettingValue?> result
 function FrameworkSettings:get_settings(setting_type, player_index)
-    local settings_group = settings_table[setting_type]
+    local settings_group = assert(settings_table[setting_type])
 
     local values = settings_group:get_values(player_index)
     ---@cast values table<string, FrameworkSettingValue?>?
@@ -140,7 +140,7 @@ end
 ---@param value FrameworkSettingValue
 ---@param player_index integer? The current player index.
 function FrameworkSettings:set_setting(setting_type, name, value, player_index)
-    local settings_group = settings_table[setting_type]
+    local settings_group = assert(settings_table[setting_type])
     if settings_group.store_value then
         settings_group.store_value(name, value, player_index)
         settings_group:clear(player_index)
