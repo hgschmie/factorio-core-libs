@@ -41,7 +41,7 @@ local GUI_UPDATE_TICK_INTERVAL = 11
 
 --- Externalize the functions called for events; they can not be serialized so they can not be stored in storage
 ---@class framework.gui_manager.event_definition
----@field events table<string, framework.gui.element_handler>? Map of all known events and the functions to call
+---@field events table<string, framework.gui.element_handler> Map of all known events and the functions to call
 ---@field custominput_events table<defines.events, table<string, framework.gui.custominput_handler>>? Map of all known custom input events
 ---@field callback framework.gui.update_callback? Optional update callback that is executed when the GUI is open
 ---@field cleanup framework.gui.update_callback? Optional cleanup callback that is executed when the GUI is closed
@@ -132,7 +132,6 @@ end
 function FrameworkGuiManager:determineGuiHandlerId(event, gui)
     local event_handler_map = assert(gui.event_handlers[event.name])
 
-    ---@type LuaGuiElement
     local elem = event.element
     assert(elem and elem.valid)
     return event_handler_map[elem.name]
@@ -144,7 +143,6 @@ end
 function FrameworkGuiManager:dispatch(event)
     if not event then return false end
 
-    ---@type LuaGuiElement
     local elem = event.element
     if not (elem and elem.valid) then return false end
 

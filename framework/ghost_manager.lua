@@ -54,7 +54,7 @@ local function on_pre_build(event)
     }
 end
 
----@param player_index integer
+---@param player_index integer?
 ---@return ff2.ghost_manager.PreBuild? pre_build
 function FrameworkGhostManager:getPreBuild(player_index)
     local state = self:state()
@@ -72,6 +72,7 @@ function FrameworkGhostManager:registerGhost(entity, player_index)
 
     local state = self:state()
 
+    ---@type ff2.ghost_manager.AttachedEntity
     local attached_entity = {
         entity = entity,
         key = tools:createEntityKeyFromEntity(entity),
@@ -253,6 +254,7 @@ function FrameworkGhostManager:registerForName(attrs)
     Event.register(defines.events.on_post_entity_died, on_post_entity_died, event_matcher, nil, { framework = true })
 
     local names = (type(attrs.names) ~= 'table') and { attrs.names } or attrs.names
+    ---@cast names string[]
 
     -- if a callback was provided, register callback and turn on the ticker
     if attrs.refresh_callback then

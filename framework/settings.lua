@@ -30,7 +30,7 @@ local settings_table = {
         get_values = function(self) return self.values end,
         init_values = function(self)
             self.values = {}
-            return self.values
+            return self.values --[[@as table<string, FrameworkSettingValue?> ]]
         end,
         clear = function(self) self.values = nil end,
     },
@@ -67,14 +67,17 @@ local settings_table = {
         end,
         get_values = function(self, player_index)
             local index = player_index or 'default'
+            ---@cast self.values table<uint32|string, table<string, FrameworkSettingValue?>>
             return self.values[index]
         end,
         init_values = function(self, player_index)
             local index = player_index or 'default'
+            ---@cast self.values table<uint32|string, table<string, FrameworkSettingValue?>>
             self.values[index] = {}
             return self.values[index]
         end,
         clear = function(self, player_index)
+            ---@cast self.values table<uint32|string, table<string, FrameworkSettingValue?>>
             if player_index then
                 self.values[player_index] = {}
             else
@@ -115,6 +118,7 @@ function FrameworkSettings:get_settings(setting_type, player_index)
     local settings_group = settings_table[setting_type]
 
     local values = settings_group:get_values(player_index)
+    ---@cast values table<string, FrameworkSettingValue?>?
     if values then return values end
 
     values = settings_group:init_values(player_index)
@@ -206,6 +210,7 @@ end
 
 ----------------------------------------------------------------------------------------------------
 
+---@diagnostic disable-next-line: unnecessary-if
 if script then
     local Event = require('stdlib.event.event')
 
