@@ -1,4 +1,4 @@
-## Unreleased
+## Version 4
 
 * Stdlib - From Electric Locomotives
 
@@ -7,7 +7,7 @@ Reconciled Electric Locomotives `a97bd00` into the reset core_libs baseline
 copied stdlib trees are identical: Electric Locomotives `c6e3129` and core_libs
 `9f97024` (23 files). Four subsequent mod commits changed four stdlib files;
 the other 19 files have no mod-specific changes to import. Framework
-reconciliation is separate.
+changes from Electric Locomotives and Fiber Optics are also included below.
 
 Type hints and documentation:
 
@@ -34,27 +34,64 @@ Runtime fixes and behavior changes:
 | `stdlib/event/player.lua`: `Player.update_force` | Update saved force data only when both player and data exist. | `03ac6b6` | Imported. |
 
 The existing `6adf920` annotations and runtime fixes remain intact, including
-`Game.print_all` returning zero when it queues a message. Only
-`stdlib/game.lua`, `stdlib/event/player.lua`, and `stdlib/utils/is.lua` need source
-changes for this import.
+`Game.print_all` returning zero when it queues a message. The Electric Locomotives stdlib import changed
+`stdlib/game.lua`, `stdlib/event/player.lua`, and `stdlib/utils/is.lua`.
 
-## Version 4
+* Additional stdlib fixes and annotations
 
-* Ghost Manager - From Fiber Optics
+Modernize LuaLS and EmmyLua annotations, including optional player results,
+prototype types, and generic table helpers. `Table.keys` accounts for optional
+string conversion; `Table.array_to_dictionary` documents its value/boolean modes.
 
-Fix that ghost manager deletes unrelated ghosts too fast
+`Area.flip` always returns its area, and position distance helpers default an
+omitted second position to the origin. `Core.log_and_print` returns false when
+nothing is printed. Game helpers validate player/force inputs, and
+`Game.print_all` returns zero when it queues a message.
 
-* Gui - From Train Tracker
+* Blueprint Manager - From Electric Locomotives
 
-addTag method to GUI for non-gui element links
+Require both a player and player data before handling blueprint events. Return
+nil when no accessible blueprint stack is available. Update annotations for
+LuaRecord blueprint sources and optional callbacks.
+
+* Ghost Manager - From Fiber Optics and Electric Locomotives
+
+Fix premature deletion of unrelated ghosts. Check entity validity directly and
+assert that registered ghosts have entity keys and unit numbers.
+
+* GUI - From Train Tracker, Electric Locomotives, and Fiber Optics
+
+Add `addTags` for GUI links outside the element tree. Normalize present GUI type
+tags to strings while continuing to ignore elements without a GUI type tag.
+Allow event definitions to omit the event table, initialize it at registration,
+and safely return false when dispatch finds no event table or handler.
+
+Assert tab/content definitions and provide clearer errors for missing GUI type
+or player index. Simplify handler cleanup and player-index access. Refine GUI
+context, element, and handler annotations.
+
+* Settings - From LTN-Space Exploration and Electric Locomotives
+
+Support numeric debug levels from the startup dropdown, with a zero fallback.
+Ignore writes for missing players without changing player defaults. Iterate
+settings providers when adding defaults or flushing caches, and assert valid
+settings groups before reading or writing.
 
 * Logger - From LTN-Space Exploration
 
-new logger, supports levels, config is now a dropdown
+Provide level-based logging and printing, fix log-level assignment, and remove
+the unused stdlib logger dependency.
 
-* Settings - From LTN-Space Exploration
+* Tombstones and translations - From Electric Locomotives
 
-better settings management for debug level
+Convert blueprint entity names to strings before applying tombstone callbacks
+and simplify callback name normalization. Translation helpers rely on
+`Player.pdata` to assert that player data exists.
+
+* Shared framework cleanup - From Electric Locomotives
+
+Remove the unused Is dependency from event matchers and assert GUI style tables
+before defining slot styles. Update framework and prototype-helper annotations.
 
 ## Version 3
 
